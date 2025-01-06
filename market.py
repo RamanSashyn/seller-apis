@@ -11,6 +11,23 @@ logger = logging.getLogger(__file__)
 
 
 def get_product_list(page, campaign_id, access_token):
+    """Загружает список товаров с Яндекс.Маркет по указанной странице и кампании.
+
+    Аргументы:
+        page (str): Токен страницы для получения товаров.
+        campaign_id (str): ID кампании на Яндекс.Маркет.
+        access_token (str): Токен доступа для авторизации.
+
+    Возвращает:
+        Список товаров в виде JSON-объекта.
+
+    Примеры:
+        >>> get_product_list("nextPageToken", "12345", "access_token")
+        {'result': [...]}
+
+        >>> get_product_list("", "", "")  # В случае неправильных данных или токенов
+        {'result': []}
+    """
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
         "Content-Type": "application/json",
@@ -30,6 +47,16 @@ def get_product_list(page, campaign_id, access_token):
 
 
 def update_stocks(stocks, campaign_id, access_token):
+    """Обновляет остатки товаров на Яндекс.Маркет.
+
+    Аргументы:
+        stocks (list): Список товаров с новыми остатками.
+        campaign_id (str): ID кампании на Яндекс.Маркет.
+        access_token (str): Токен доступа для API Яндекс.Маркет.
+
+    Возвращает:
+        Ответ от API.
+    """
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
         "Content-Type": "application/json",
@@ -46,6 +73,20 @@ def update_stocks(stocks, campaign_id, access_token):
 
 
 def update_price(prices, campaign_id, access_token):
+    """Обновляет цены товаров на Яндекс.Маркет.
+
+    Аргументы:
+        prices (list): Список товаров с новыми ценами.
+        campaign_id (str): ID кампании на Яндекс.Маркет.
+        access_token (str): Токен доступа для авторизации.
+
+    Возвращает:
+        Ответ от API.
+
+    Примеры:
+        >>> update_price([{"id": "12345", "price": {"value": 1000}}], "12345", "access_token")
+        {'result': 'success'}
+        """
     endpoint_url = "https://api.partner.market.yandex.ru/"
     headers = {
         "Content-Type": "application/json",
@@ -62,7 +103,19 @@ def update_price(prices, campaign_id, access_token):
 
 
 def get_offer_ids(campaign_id, market_token):
-    """Получить артикулы товаров Яндекс маркета"""
+    """Получает список артикулов товаров из Яндекс.Маркет по заданной кампании.
+
+    Аргументы:
+        campaign_id (str): ID кампании на Яндекс.Маркет.
+        market_token (str): Токен доступа к Яндекс.Маркет API.
+
+    Возвращает:
+        Список артикулов товаров (shopSku).
+
+    Примеры:
+        >>> get_offer_ids("12345", "access_token")
+        ['12345', '67890']
+    """
     page = ""
     product_list = []
     while True:
@@ -78,6 +131,20 @@ def get_offer_ids(campaign_id, market_token):
 
 
 def create_stocks(watch_remnants, offer_ids, warehouse_id):
+    """Создает структуру для обновления остатков на Яндекс.Маркет.
+
+    Аргументы:
+        watch_remnants (list): Список остатков с кодами и количеством.
+        offer_ids (list): Список артикулов товаров.
+        warehouse_id (str): ID склада для обновления остатков.
+
+    Возвращает:
+        Список с информацией о товарах и их остатках для загрузки в Яндекс.Маркет.
+
+    Пример:
+        >>> create_stocks([{'Код': '12345', 'Количество': '10'}], ['12345'], '100')
+        [{'sku': '12345', 'warehouseId': '100', 'items': [{'count': 10, 'type': 'FIT', 'updatedAt': '2025-01-01T12:00:00Z'}]}]
+    """
     # Уберем то, что не загружено в market
     stocks = list()
     date = str(datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z")
@@ -123,6 +190,19 @@ def create_stocks(watch_remnants, offer_ids, warehouse_id):
 
 
 def create_prices(watch_remnants, offer_ids):
+    """Создает структуру для обновления цен товаров на Яндекс.Маркет.
+
+    Аргументы:
+        watch_remnants (list): Список с ценами товаров.
+        offer_ids (list): Список артикулов товаров.
+
+    Возвращает:
+        Список с информацией о товарах и их ценах для загрузки в Яндекс.Маркет.
+
+    Примеры:
+        >>> create_prices([{'Код': '12345', 'Цена': '1000'}], ['12345'])
+        [{'id': '12345', 'price': {'value': 1000, 'currencyId': 'RUR'}}]
+    """
     prices = []
     for watch in watch_remnants:
         if str(watch.get("Код")) in offer_ids:
@@ -143,6 +223,16 @@ def create_prices(watch_remnants, offer_ids):
 
 
 async def upload_prices(watch_remnants, campaign_id, market_token):
+    """Загружает обновленные цены на Яндекс.Маркет.
+
+    Аргументы:
+        watch_remnants (list): Список остатков с ценами.
+        campaign_id (str): ID кампании на Яндекс.Маркет.
+        market_token (str): Токен доступа для API Яндекс.Маркет.
+
+    Возвращает:
+        Список обновленных цен.
+    """
     offer_ids = get_offer_ids(campaign_id, market_token)
     prices = create_prices(watch_remnants, offer_ids)
     for some_prices in list(divide(prices, 500)):
@@ -151,6 +241,17 @@ async def upload_prices(watch_remnants, campaign_id, market_token):
 
 
 async def upload_stocks(watch_remnants, campaign_id, market_token, warehouse_id):
+    """Загружает обновленные остатки товаров на Яндекс.Маркет.
+
+    Аргументы:
+        watch_remnants (list): Список остатков с количеством.
+        campaign_id (str): ID кампании на Яндекс.Маркет.
+        market_token (str): Токен доступа для API Яндекс.Маркет.
+        warehouse_id (str): ID склада для обновления остатков.
+
+    Возвращает:
+        list: Список товаров с ненулевыми остатками и полный список остатков.
+    """
     offer_ids = get_offer_ids(campaign_id, market_token)
     stocks = create_stocks(watch_remnants, offer_ids, warehouse_id)
     for some_stock in list(divide(stocks, 2000)):
@@ -162,6 +263,13 @@ async def upload_stocks(watch_remnants, campaign_id, market_token, warehouse_id)
 
 
 def main():
+    """Основная функция для обновления остатков и цен на Яндекс.Маркет.
+
+    Загружает остатки товаров, обновляет их на Яндекс.Маркет для двух кампаний (FBS и DBS), а также обновляет цены.
+
+    Возвращает:
+        None
+    """
     env = Env()
     market_token = env.str("MARKET_TOKEN")
     campaign_fbs_id = env.str("FBS_ID")
