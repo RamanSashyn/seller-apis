@@ -20,7 +20,10 @@ def get_product_list(last_id, client_id, seller_token):
         seller_token (str): Токен авторизации для продавца.
 
     Возвращает:
-        Результат запроса, содержащий список товаров.
+        dict: Ответ от API в формате JSON. Содержит ключи:
+            - 'items' (list): Список товаров.
+            - 'total' (int): Общее количество товаров.
+            - 'last_id' (str): ID последнего товара в ответе.
 
     Примеры:
         >>> get_product_list("12345", "client_id", "seller_token")
@@ -50,7 +53,7 @@ def get_product_list(last_id, client_id, seller_token):
 def get_offer_ids(client_id, seller_token):
     """Получает артикулы всех товаров магазина Ozon.
 
-    Апгументы:
+    Аргументы:
         client_id (str): ID клиента Ozon.
         seller_token (str): Токен авторизации для продавца.
 
@@ -85,7 +88,8 @@ def update_price(prices: list, client_id, seller_token):
         seller_token (str): Токен авторизации для продавца.
 
     Возвращает:
-        Ответ от сервера Ozon.
+        dict: Ответ от API в формате JSON. Содержит ключи:
+            - 'result' (str): Статус операции ('success' или 'error').
 
     Примеры:
         >>> update_price([{'offer_id': '1001', 'price': '500'}], "client_id", "seller_token")
@@ -111,7 +115,8 @@ def update_stocks(stocks: list, client_id, seller_token):
         seller_token (str): Токен авторизации для продавца.
 
     Возвращает:
-        Ответ от сервера Ozon.
+        dict: Ответ в формате JSON. Содержит ключи:
+            - 'result' (str): Статус операции ('success' или 'error').
 
     Пример:
         >>> update_stocks([{'offer_id': '1001', 'stock': 10}], "client_id", "seller_token")
@@ -132,7 +137,7 @@ def download_stock():
     """Скачивает и обрабатывает файл остатков с сайта Casio.
 
     Возвращает:
-        list: Список словарей с остатками товаров.
+        list: Список словарей с остатками товаров, считанными из Excel-файла.
     """
     # Скачать остатки с сайта
     casio_url = "https://timeworld.ru/upload/files/ostatki.zip"
@@ -161,7 +166,7 @@ def create_stocks(watch_remnants, offer_ids):
         offer_ids (list): Список артикулов (offer_id) из магазина.
 
     Возвращает:
-        list: Сформированный список остатков.
+        list: Сформированный список остатков с полями 'offer_id' и 'stock'.
     """
     # Уберем то, что не загружено в seller
     stocks = []
@@ -190,7 +195,7 @@ def create_prices(watch_remnants, offer_ids):
         offer_ids (list): Список артикулов (offer_id) из магазина.
 
     Возвращает:
-        list: Сформированный список цен.
+        list: Сформированный список цен с полями 'offer_id', 'price', и др.
     """
     prices = []
     for watch in watch_remnants:
@@ -236,7 +241,7 @@ def divide(lst: list, n: int):
         n (int): Количество элементов в каждой части.
 
     Возвращает:
-        Части списка.
+        Generator: Части списка.
 
     Пример:
         >>> list(divide([1, 2, 3, 4, 5], 2))
@@ -255,7 +260,7 @@ async def upload_prices(watch_remnants, client_id, seller_token):
         seller_token (str): Токен авторизации для продавца.
 
     Возвращает:
-        list: Загруженные цены.
+        list: Загруженные цены для всех offer_id.
     """
     offer_ids = get_offer_ids(client_id, seller_token)
     prices = create_prices(watch_remnants, offer_ids)
@@ -273,7 +278,9 @@ async def upload_stocks(watch_remnants, client_id, seller_token):
         seller_token (str): Токен авторизации для продавца.
 
     Возвращает:
-        Остатки без нулей и полный список остатков.
+        tuple:
+            - not_empty (list): Остатки без нулевых значений.
+            - stocks (list): Полный список остатков.
     """
     offer_ids = get_offer_ids(client_id, seller_token)
     stocks = create_stocks(watch_remnants, offer_ids)
